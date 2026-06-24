@@ -644,19 +644,19 @@ color:#ffb3b3}
       <div class="sub">Оба варианта бесплатны. Выберите, чем будут думать агенты.</div>
 
       <div class="opt" id="optGemini" onclick="pickEngine('gemini')">
-        <div class="opt-h"><span class="radio"></span><b>Google Gemini</b><span class="tag free">Бесплатно · быстро</span></div>
+        <div class="opt-h"><span class="radio"></span><b>OpenRouter · без VPN</b><span class="tag free">Бесплатно · быстро</span></div>
         <div class="opt-body" onclick="event.stopPropagation()">
-          <p>Умные и быстрые ответы. Нужен бесплатный ключ — берётся за минуту в Google AI Studio. Ключ хранится только на вашем телефоне.</p>
+          <p>Умные и быстрые ответы. Нужен бесплатный ключ OpenRouter — работает из России без VPN. Ключ хранится только на вашем телефоне.</p>
           <div class="mini-steps">
-            <b>1.</b> Откройте <a class="link" href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a><br>
-            <b>2.</b> «Create API key» → скопируйте<br>
+            <b>1.</b> Откройте <a class="link" href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a><br>
+            <b>2.</b> «Create Key» → скопируйте<br>
             <b>3.</b> Вставьте сюда ↓
           </div>
           <div class="field">
-            <label>API-ключ Gemini</label>
-            <input type="password" id="geminiKey" placeholder="AIza..." autocomplete="off" spellcheck="false">
+            <label>API-ключ OpenRouter</label>
+            <input type="password" id="geminiKey" placeholder="sk-or-..." autocomplete="off" spellcheck="false">
             <label>Модель</label>
-            <input type="text" id="geminiModel" placeholder="gemini-2.0-flash" autocomplete="off" spellcheck="false">
+            <input type="text" id="geminiModel" placeholder="qwen/qwen3-next-80b-a3b-instruct:free" autocomplete="off" spellcheck="false">
           </div>
         </div>
       </div>
@@ -772,7 +772,7 @@ let state = load();
 function load(){ try{ return JSON.parse(localStorage.getItem(LS)) || {}; }catch(e){ return {}; } }
 function save(){ localStorage.setItem(LS, JSON.stringify(state)); }
 state.engine = state.engine || 'gemini';
-state.geminiModel = state.geminiModel || 'gemini-2.0-flash';
+state.geminiModel = state.geminiModel || 'qwen/qwen3-next-80b-a3b-instruct:free';
 state.chats = state.chats || {};
 let current = null;
 
@@ -848,7 +848,7 @@ async function send(){
   const inp=document.getElementById('input');
   const text=inp.value.trim(); if(!text) return;
   // engine check
-  if(state.engine==='gemini' && !state.geminiKey){ toast('Сначала добавьте ключ Gemini в настройках','err'); openSettings(); return; }
+  if(state.engine==='gemini' && !state.geminiKey){ toast('Сначала добавьте ключ OpenRouter в настройках','err'); openSettings(); return; }
   if(state.engine==='local' && !window.LocalLLM.loaded){ toast('Сначала загрузите локальную модель','err'); openSettings(); return; }
 
   inp.value=''; autoGrow(inp);
@@ -878,29 +878,24 @@ async function send(){
 }
 
 async function callGemini(system, hist){
-  const model=(state.geminiModel||'gemini-2.0-flash').trim();
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(state.geminiKey)}`;
-  const contents=hist.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.text}]}));
-  const body={ system_instruction:{parts:[{text:system}]}, contents,
-    generationConfig:{temperature:0.7,maxOutputTokens:1024},
-    safetySettings:[
-{category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_NONE'},
-{category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_NONE'},
-{category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_NONE'},
-{category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_NONE'}
-    ]};
-  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const model=(state.geminiModel||'qwen/qwen3-next-80b-a3b-instruct:free').trim();
+  const url='https://openrouter.ai/api/v1/chat/completions';
+  const messages=[{role:'system',content:system}].concat(hist.map(m=>({role:m.role==='assistant'?'assistant':'user',content:m.text})));
+  const body={ model:model, messages:messages, temperature:0.7, max_tokens:1024 };
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.geminiKey},body:JSON.stringify(body)});
   if(!r.ok){
     let msg=r.status+'';
-    try{ const e=await r.json(); msg=e.error?.message||JSON.stringify(e); }catch(_){}
-    if(r.status===400 && /API key/i.test(msg)) msg='неверный ключ API';
-    if(r.status===404) msg='модель «'+model+'» не найдена — попробуйте gemini-2.0-flash или gemini-1.5-flash';
+    try{ const e=await r.json(); msg=(e.error&&e.error.message)||JSON.stringify(e); }catch(_){}
+    if(r.status===401) msg='неверный ключ OpenRouter (нужен вид sk-or-...)';
+    if(r.status===402) msg='кончились бесплатные кредиты — выберите модель с :free';
+    if(r.status===404) msg='модель не найдена — впишите в настройках, напр. qwen/qwen3-next-80b-a3b-instruct:free';
+    if(r.status===429) msg='слишком много запросов, подождите минуту';
     throw new Error(msg);
-}
+  }
   const d=await r.json();
-  const c=d.candidates?.[0];
-  if(!c) throw new Error('пустой ответ от Gemini');
-  return (c.content?.parts||[]).map(p=>p.text||'').join('');
+  const c=d.choices&&d.choices[0];
+  if(!c) throw new Error('пустой ответ от OpenRouter');
+  return (c.message&&c.message.content)||'';
 }
 
 function clearChat(){
@@ -914,7 +909,7 @@ function clearChat(){
 ============================================================ */
 function openSettings(){
   document.getElementById('geminiKey').value = state.geminiKey || '';
-  document.getElementById('geminiModel').value = state.geminiModel || 'gemini-2.0-flash';
+  document.getElementById('geminiModel').value = state.geminiModel || 'qwen/qwen3-next-80b-a3b-instruct:free';
   paintEngine();
   switchView('settings');
 }
@@ -930,7 +925,7 @@ function paintEngine(){
 }
 function saveSettings(){
   state.geminiKey=document.getElementById('geminiKey').value.trim();
-  state.geminiModel=document.getElementById('geminiModel').value.trim()||'gemini-2.0-flash';
+  state.geminiModel=document.getElementById('geminiModel').value.trim()||'qwen/qwen3-next-80b-a3b-instruct:free';
   save(); updateWarn();
   toast('Сохранено');
   closeSettings();
