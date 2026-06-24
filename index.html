@@ -849,54 +849,65 @@ async function send(){
   if(busy) return;
   const inp=document.getElementById('input');
   const text=inp.value.trim(); if(!text) return;
-  // engine check
   if(state.engine==='gemini' && !state.geminiKey){ toast('Сначала добавьте ключ OpenRouter в настройках','err'); openSettings(); return; }
   if(state.engine==='local' && !window.LocalLLM.loaded){ toast('Сначала загрузите локальную модель','err'); openSettings(); return; }
-
   inp.value=''; autoGrow(inp);
-      addBubble('me',text);
+  addBubble('me',text);
   history().push({role:'user',text}); save();
-
   busy=true; document.getElementById('sendBtn').disabled=true;
   const typing=document.createElement('div'); typing.className='typing'; typing.innerHTML='<i></i><i></i><i></i>';
   document.getElementById('msgs').appendChild(typing); scrollDown();
-
+  let bubble=null;
   try{
     const sys = COMPANY + "\n\nТВОЯ РОЛЬ:\n" + current.prompt;
     const hist = history().slice(-40);
-    let reply;
-    if(state.engine==='gemini') reply = await callGemini(sys, hist);
+    let reply='';
+    const onChunk=(full)=>{ if(!bubble){ if(typing.parentNode) typing.remove(); bubble=addBubble('bot',''); } bubble.innerHTML=fmt(full); scrollDown(); };
+    if(state.engine==='gemini') reply = await callGemini(sys, hist, onChunk);
     else reply = await window.LocalLLM.chat(sys, hist);
-    typing.remove();
-    reply = (reply||'').trim() || '(пустой ответ)';
-    addBubble('bot', reply);
+    if(typing.parentNode) typing.remove();
+    reply=(reply||'').trim()||'(пустой ответ)';
+    if(!bubble) addBubble('bot', reply); else bubble.innerHTML=fmt(reply);
     history().push({role:'assistant',text:reply}); save();
-}catch(err){
-    typing.remove();
-    addBubble('bot', '⚠ Ошибка: '+(err.message||err)+'\n\nПроверьте ключ/модель в настройках или интернет.');
-}finally{
+  }catch(err){
+    if(typing.parentNode) typing.remove();
+    if(!bubble) addBubble('bot', '⚠ Ошибка: '+(err.message||err)+'\n\nПроверьте ключ/модель в настройках или интернет.');
+    else bubble.innerHTML=fmt((bubble.textContent||'')+' ⚠ '+(err.message||err));
+  }finally{
     busy=false; document.getElementById('sendBtn').disabled=false;
-}
+  }
 }
 
-async function callGemini(system, hist){
+async function callGemini(system, hist, onChunk){
   const messages=[{role:'system',content:system}].concat(hist.map(m=>({role:m.role==='assistant'?'assistant':'user',content:m.text})));
   const primary=(state.geminiModel||'qwen/qwen3-next-80b-a3b-instruct:free').trim();
-  const list=[primary,'meta-llama/llama-3.3-70b-instruct:free','qwen/qwen3-next-80b-a3b-instruct:free','google/gemma-4-31b-it:free'];
+  const list=[primary,'meta-llama/llama-3.3-70b-instruct:free','google/gemma-4-31b-it:free'];
   const seen={}; let lastErr='перегрузка';
   for(let i=0;i<list.length;i++){
     const model=list[i]; if(seen[model]) continue; seen[model]=1;
-    for(let a=0;a<3;a++){
+    for(let a=0;a<2;a++){
       let r;
       try{
-        r=await fetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.geminiKey},body:JSON.stringify({model:model,messages:messages,temperature:0.7,max_tokens:1024})});
-      }catch(e){ lastErr=String(e.message||e); await new Promise(s=>setTimeout(s,1200)); continue; }
-      if(r.status===429||r.status===503){ lastErr='перегрузка'; await new Promise(s=>setTimeout(s,1500*(a+1))); continue; }
+        r=await fetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.geminiKey},body:JSON.stringify({model:model,messages:messages,temperature:0.7,max_tokens:1024,stream:true})});
+      }catch(e){ lastErr=String(e.message||e); await new Promise(s=>setTimeout(s,700)); continue; }
+      if(r.status===429||r.status===503){ lastErr='перегрузка'; await new Promise(s=>setTimeout(s,800*(a+1))); continue; }
       if(r.status===401) throw new Error('неверный ключ OpenRouter (нужен вид sk-or-...)');
       if(r.status===402) throw new Error('кончились кредиты — нужна модель с :free');
       if(!r.ok){ let m=r.status+''; try{const e=await r.json(); m=(e.error&&e.error.message)||m;}catch(_){} lastErr=m; break; }
-      const d=await r.json(); const c=d.choices&&d.choices[0];
-      if(c&&c.message&&c.message.content) return c.message.content;
+      const reader=r.body.getReader(); const dec=new TextDecoder(); let buf='', full='';
+      while(true){
+        const rd=await reader.read(); if(rd.done) break;
+        buf+=dec.decode(rd.value,{stream:true});
+        let nl;
+        while((nl=buf.indexOf('\n'))>=0){
+          let line=buf.slice(0,nl).trim(); buf=buf.slice(nl+1);
+          if(!line.startsWith('data:')) continue;
+          const data=line.slice(5).trim();
+          if(data==='[DONE]') continue;
+          try{ const j=JSON.parse(data); const t=j.choices&&j.choices[0]&&j.choices[0].delta&&j.choices[0].delta.content; if(t){ full+=t; if(onChunk) onChunk(full); } }catch(_){}
+        }
+      }
+      if(full) return full;
       lastErr='пустой ответ'; break;
     }
   }
