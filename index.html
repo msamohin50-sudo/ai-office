@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+  <html lang="ru">
+  <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#0a0b0d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ИИ-Офис">
+
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23d8923f'/%3E%3Cpath d='M3 7h18M3 12h18M3 17h18M6 7v10M12 7v10M18 7v10' stroke='%232a1c08' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23d8923f'/%3E%3Cpath d='M3 7h18M3 12h18M3 17h18M6 7v10M12 7v10M18 7v10' stroke='%232a1c08' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <title>Прогресс · ИИ-Офис</title>
+  <style>
+  :root{
+  --bg:#0a0b0d;
+--bg2:#101216;
+--panel:#15181e;
+--panel2:#1b1f27;
+--line:#262b33;
+--wood:#d8923f;
+  --wood2:#f0ab53;
+  --wood-deep:#a8662a;
+  --txt:#e7eaef;
+  --muted:#9aa3b1;
+--faint:#5b6573;
+--ok:#5fc27e;
+--err:#ff6b6b;
+  --safe-t:env(safe-area-inset-top);
+--safe-b:env(safe-area-inset-bottom);
+}
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+-webkit-tap-highlight-color:transparent}
+html,body{
+  height:100%}
+  body{
+  background:var(--bg);
+color:var(--txt);
+font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+line-height:1.5;
+overflow:hidden;
+-webkit-font-smoothing:antialiased;
+}
+.app{
+  max-width:520px;
+margin:0 auto;
+  height:100dvh;
+position:relative;
+  overflow:hidden;
+background:var(--bg)}
+::selection{
+  background:var(--wood);
+  color:#0a0b0d}
+button{
+  font-family:inherit;
+  cursor:pointer;
+border:none;
+background:none;
+color:inherit}
+input,textarea{
+  font-family:inherit}
+  .view{
+position:absolute;
+inset:0;
+  display:flex;
+flex-direction:column;
+transition:transform .32s cubic-bezier(.4,0,.2,1),opacity .25s;
+}
+.view.hidden{
+  transform:translateX(100%);
+opacity:0;
+pointer-events:none}
+  .view.back{
+transform:translateX(-26%);
+opacity:.4;
+pointer-events:none}
+  .topbar{
+  display:flex;
+align-items:center;
+gap:13px;
+padding:calc(14px + var(--safe-t)) 18px 14px;
+  background:linear-gradient(180deg,rgba(16,18,22,.96),rgba(16,18,22,.82));
+  backdrop-filter:blur(16px);
+border-bottom:1px solid var(--line);
+position:relative;
+z-index:5;
+  }
+.logo{
+width:40px;
+height:40px;
+border-radius:11px;
+flex:none;
+display:grid;
+place-items:center;
+background:linear-gradient(145deg,var(--wood2),var(--wood-deep));
+box-shadow:0 6px 18px rgba(216,146,63,.35)}
+.logo svg{
+  width:24px;
+    height:24px}
+.topbar .ttl{
+flex:1;
+min-width:0}
+.topbar .ttl b{
+  display:block;
+font-size:17px;
+font-weight:800;
+  letter-spacing:-.01em}
+.topbar .ttl small{
+color:var(--muted);
+font-size:12px;
+font-weight:600}
+  .icon-btn{
+width:40px;
+height:40px;
+border-radius:11px;
+display:grid;
+place-items:center;
+background:rgba(255,255,255,.04);
+border:1px solid var(--line);
+transition:.2s;
+flex:none}
+.icon-btn:active{
+transform:scale(.92)}
+.icon-btn svg{
+width:20px;
+height:20px;
+stroke:var(--muted)}
+.scroll{
+  flex:1;
+overflow-y:auto;
+-webkit-overflow-scrolling:touch}
+.home-intro{
+padding:22px 18px 8px}
+.home-intro h1{
+font-size:24px;
+font-weight:800;
+letter-spacing:-.02em;
+margin-bottom:6px}
+.home-intro h1 span{
+background:linear-gradient(120deg,var(--wood2),#ffd99a);
+-webkit-background-clip:text;
+background-clip:text;
+  -webkit-text-fill-color:transparent}
+.home-intro p{
+  color:var(--muted);
+    font-size:14px}
+.warnbar{
+  margin:14px 18px 0;
+padding:13px 15px;
+  border-radius:13px;
+background:rgba(216,146,63,.1);
+  border:1px solid rgba(216,146,63,.32);
+  display:flex;
+gap:11px;
+align-items:center;
+  font-size:13px;
+  color:var(--wood2);
+font-weight:600}
+.warnbar svg{
+  width:20px;
+height:20px;
+  flex:none;
+  stroke:var(--wood2)}
+  .warnbar button{
+margin-left:auto;
+background:var(--wood2);
+color:#1a1205;
+font-weight:800;
+font-size:12px;
+padding:7px 13px;
+border-radius:9px;
+white-space:nowrap}
+.agents{
+padding:16px 18px calc(28px + var(--safe-b))}
+.sec-label{
+font-size:11px;
+font-weight:800;
+letter-spacing:.1em;
+text-transform:uppercase;
+color:var(--faint);
+margin:8px 4px 14px}
+.acard{
+display:flex;
+align-items:center;
+gap:14px;
+padding:16px;
+border-radius:16px;
+margin-bottom:12px;
+background:linear-gradient(160deg,var(--panel),var(--bg2));
+border:1px solid var(--line);
+transition:.18s;
+position:relative;
+overflow:hidden;
+}
+.acard:active{
+transform:scale(.985);
+border-color:rgba(216,146,63,.45)}
+.avatar{
+  width:52px;
+height:52px;
+border-radius:14px;
+flex:none;
+display:grid;
+place-items:center;
+font-size:25px;
+box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+position:relative}
+.avatar::after{
+content:"";
+position:absolute;
+right:-2px;
+bottom:-2px;
+width:13px;
+height:13px;
+border-radius:50%;
+background:var(--ok);
+border:2.5px solid var(--panel)}
+.acard .info{
+flex:1;
+min-width:0}
+.acard .info b{
+font-size:16px;
+font-weight:700;
+display:block}
+.acard .info small{
+color:var(--muted);
+font-size:12.5px;
+display:block;
+margin-top:1px;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis}
+.acard .chev{
+color:var(--faint);
+flex:none}
+.acard .chev svg{
+width:20px;
+height:20px;
+stroke:currentColor}
+.chat-head .avatar{
+width:42px;
+height:42px;
+border-radius:12px;
+font-size:21px}
+.chat-head .avatar::after{
+width:11px;
+height:11px;
+border-width:2px;
+border-color:var(--bg2)}
+.msgs{
+flex:1;
+overflow-y:auto;
+-webkit-overflow-scrolling:touch;
+padding:18px 16px 8px;
+display:flex;
+flex-direction:column;
+gap:12px}
+.bubble{
+max-width:84%;
+padding:11px 15px;
+border-radius:18px;
+font-size:15px;
+line-height:1.5;
+white-space:pre-wrap;
+word-wrap:break-word;
+animation:pop .25s ease}
+@keyframes pop{
+from{
+opacity:0;
+transform:translateY(8px) scale(.97)}
+to{
+opacity:1;
+transform:none}
+}
+.bubble.me{
+align-self:flex-end;
+background:linear-gradient(135deg,var(--wood2),var(--wood-deep));
+color:#1a1205;
+border-bottom-right-radius:6px;
+font-weight:500}
+.bubble.bot{
+align-self:flex-start;
+background:var(--panel2);
+border:1px solid var(--line);
+border-bottom-left-radius:6px}
+.bubble.bot b{
+color:var(--wood2)}
+.day-hint{
+align-self:center;
+text-align:center;
+color:var(--faint);
+font-size:12px;
+max-width:90%;
+padding:8px 0}
+.typing{
+align-self:flex-start;
+background:var(--panel2);
+border:1px solid var(--line);
+padding:14px 17px;
+border-radius:18px;
+border-bottom-left-radius:6px;
+display:flex;
+gap:5px}
+.typing i{
+width:7px;
+height:7px;
+border-radius:50%;
+background:var(--muted);
+animation:bounce 1.2s infinite}
+.typing i:nth-child(2){
+animation-delay:.15s}
+.typing i:nth-child(3){
+animation-delay:.3s}
+@keyframes bounce{
+0%,60%,100%{
+transform:translateY(0);
+opacity:.4}
+30%{
+transform:translateY(-6px);
+opacity:1}
+}
+.chips{
+display:flex;
+gap:8px;
+overflow-x:auto;
+padding:6px 16px 10px;
+-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{
+display:none}
+.chip{
+white-space:nowrap;
+padding:9px 14px;
+border-radius:11px;
+background:rgba(255,255,255,.04);
+border:1px solid var(--line);
+color:var(--muted);
+font-size:13px;
+font-weight:600;
+flex:none;
+transition:.15s}
+.chip:active{
+background:rgba(216,146,63,.14);
+color:var(--wood2)}
+.inputbar{
+display:flex;
+gap:10px;
+align-items:flex-end;
+padding:10px 14px calc(12px + var(--safe-b));
+background:var(--bg2);
+border-top:1px solid var(--line)}
+.inputbar textarea{
+flex:1;
+resize:none;
+max-height:120px;
+background:var(--panel);
+border:1px solid var(--line);
+border-radius:16px;
+padding:12px 15px;
+color:#fff;
+font-size:15px;
+line-height:1.4;
+outline:none;
+transition:.2s}
+.inputbar textarea:focus{
+border-color:var(--wood)}
+.send{
+width:46px;
+height:46px;
+border-radius:14px;
+flex:none;
+display:grid;
+place-items:center;
+background:linear-gradient(135deg,var(--wood2),var(--wood-deep));
+box-shadow:0 6px 16px rgba(216,146,63,.4);
+transition:.15s}
+.send:active{
+transform:scale(.9)}
+.send:disabled{
+  opacity:.4;
+box-shadow:none}
+.send svg{
+width:21px;
+height:21px;
+stroke:#1a1205;
+fill:none}
+#settings{
+background:rgba(8,9,11,.6);
+backdrop-filter:blur(4px);
+justify-content:flex-end;
+z-index:20}
+.sheet{
+background:var(--bg2);
+border-top-left-radius:24px;
+border-top-right-radius:24px;
+border:1px solid var(--line);
+border-bottom:none;
+max-height:92dvh;
+overflow-y:auto;
+padding:8px 20px calc(26px + var(--safe-b));
+animation:up .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{
+from{
+transform:translateY(100%)}
+to{
+transform:none}
+}
+.grab{
+width:42px;
+height:5px;
+border-radius:3px;
+background:var(--line);
+margin:10px auto 16px}
+.sheet h2{
+font-size:20px;
+font-weight:800;
+margin-bottom:4px}
+.sheet .sub{
+color:var(--muted);
+font-size:13.5px;
+margin-bottom:20px}
+.opt{
+  border:1px solid var(--line);
+border-radius:15px;
+padding:15px;
+margin-bottom:12px;
+transition:.2s;
+background:var(--panel)}
+.opt.on{
+border-color:var(--wood);
+background:rgba(216,146,63,.07)}
+.opt-h{
+  display:flex;
+align-items:center;
+gap:12px}
+.radio{
+width:22px;
+height:22px;
+border-radius:50%;
+border:2px solid var(--faint);
+flex:none;
+display:grid;
+place-items:center;
+transition:.2s}
+.opt.on .radio{
+border-color:var(--wood2)}
+.opt.on .radio::after{
+  content:"";
+width:11px;
+height:11px;
+border-radius:50%;
+background:var(--wood2)}
+.opt-h b{
+font-size:15.5px;
+font-weight:700}
+.opt-h .tag{
+margin-left:auto;
+font-size:10px;
+font-weight:800;
+letter-spacing:.04em;
+text-transform:uppercase;
+padding:4px 9px;
+border-radius:7px;
+background:rgba(95,194,126,.16);
+color:var(--ok)}
+.opt-h .tag.free{
+background:rgba(95,194,126,.16);
+color:var(--ok)}
+.opt-body{
+margin-top:13px;
+display:none}
+.opt.on .opt-body{
+display:block}
+.opt p{
+color:var(--muted);
+font-size:13px;
+margin-bottom:12px}
+.field label{
+display:block;
+font-size:12px;
+font-weight:700;
+color:var(--muted);
+margin-bottom:7px}
+.field input{
+width:100%;
+padding:13px 14px;
+border-radius:12px;
+background:var(--bg);
+border:1px solid var(--line);
+color:#fff;
+font-size:15px;
+outline:none;
+margin-bottom:13px}
+.field input:focus{
+border-color:var(--wood)}
+.link{
+color:var(--wood2);
+font-weight:700;
+font-size:13px;
+text-decoration:none}
+.mini-steps{
+font-size:12.5px;
+color:var(--muted);
+line-height:1.7;
+margin:6px 0 14px;
+padding-left:2px}
+.mini-steps b{
+color:var(--txt)}
+.load-btn{
+width:100%;
+padding:13px;
+border-radius:12px;
+background:rgba(255,255,255,.05);
+border:1px solid var(--line);
+color:#fff;
+font-weight:700;
+font-size:14px;
+transition:.2s}
+.load-btn:active{
+transform:scale(.98)}
+.progress{
+height:7px;
+border-radius:4px;
+background:var(--line);
+overflow:hidden;
+margin-top:12px;
+display:none}
+.progress.show{
+display:block}
+.progress i{
+display:block;
+height:100%;
+width:0;
+background:linear-gradient(90deg,var(--wood2),var(--wood-deep));
+transition:width .3s}
+.pstat{
+font-size:12px;
+color:var(--muted);
+margin-top:8px;
+min-height:16px}
+.save{
+width:100%;
+margin-top:8px;
+padding:15px;
+border-radius:14px;
+background:linear-gradient(135deg,var(--wood2),var(--wood-deep));
+color:#1a1205;
+font-weight:800;
+font-size:15px;
+box-shadow:0 8px 22px rgba(216,146,63,.35)}
+.save:active{
+transform:scale(.985)}
+.disclaimer{
+font-size:11.5px;
+color:var(--faint);
+text-align:center;
+margin-top:16px;
+line-height:1.6}
+.scroll::-webkit-scrollbar,.msgs::-webkit-scrollbar,.sheet::-webkit-scrollbar{
+width:0}
+.toast{
+position:fixed;
+left:50%;
+bottom:calc(30px + var(--safe-b));
+transform:translateX(-50%) translateY(20px);
+background:#1d2127;
+border:1px solid var(--line);
+color:#fff;
+padding:12px 20px;
+border-radius:13px;
+font-size:14px;
+font-weight:600;
+box-shadow:0 12px 30px rgba(0,0,0,.5);
+opacity:0;
+transition:.3s;
+z-index:50;
+max-width:90%;
+text-align:center}
+.toast.show{
+opacity:1;
+transform:translateX(-50%) translateY(0)}
+.toast.err{
+border-color:rgba(255,107,107,.5);
+color:#ffb3b3}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== HOME ===== -->
+  <section class="view" id="home">
+    <div class="topbar">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M3 7h18M3 12h18M3 17h18M6 7v10M12 7v10M18 7v10" stroke="#2a1c08" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <div class="ttl"><b>Прогресс · ИИ-Офис</b><small>Команда агентов под ваш бизнес</small></div>
+      <button class="icon-btn" onclick="openSettings()" aria-label="Настройки">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.2.61.78 1.05 1.42 1.09H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="scroll">
+      <div class="home-intro">
+        <h1>Ваш <span>ИИ-офис</span></h1>
+        <p>5 специалистов по производству и продаже поддонов. Спросите любого — ответит как живой сотрудник.</p>
+      </div>
+      <div class="warnbar" id="setupWarn" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Подключите движок ИИ, чтобы агенты заработали</span>
+        <button onclick="openSettings()">Настроить</button>
+      </div>
+      <div class="agents">
+        <div class="sec-label">В офисе сейчас</div>
+        <div id="agentList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CHAT ===== -->
+  <section class="view hidden" id="chat">
+    <div class="topbar chat-head">
+      <button class="icon-btn" onclick="goHome()" aria-label="Назад">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="avatar" id="chatAvatar"></div>
+      <div class="ttl"><b id="chatName"></b><small id="chatRole"></small></div>
+      <button class="icon-btn" onclick="clearChat()" aria-label="Очистить">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="msgs" id="msgs"></div>
+    <div class="chips" id="chips"></div>
+    <div class="inputbar">
+        <textarea id="input" rows="1" placeholder="Сообщение…" oninput="autoGrow(this)"></textarea>
+      <button class="send" id="sendBtn" onclick="send()" aria-label="Отправить">
+        <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== SETTINGS ===== -->
+  <section class="view hidden" id="settings" onclick="if(event.target===this)closeSettings()">
+    <div class="sheet">
+      <div class="grab"></div>
+      <h2>Движок ИИ</h2>
+      <div class="sub">Оба варианта бесплатны. Выберите, чем будут думать агенты.</div>
+
+      <div class="opt" id="optGemini" onclick="pickEngine('gemini')">
+        <div class="opt-h"><span class="radio"></span><b>Google Gemini</b><span class="tag free">Бесплатно · быстро</span></div>
+        <div class="opt-body" onclick="event.stopPropagation()">
+          <p>Умные и быстрые ответы. Нужен бесплатный ключ — берётся за минуту в Google AI Studio. Ключ хранится только на вашем телефоне.</p>
+          <div class="mini-steps">
+            <b>1.</b> Откройте <a class="link" href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a><br>
+            <b>2.</b> «Create API key» → скопируйте<br>
+            <b>3.</b> Вставьте сюда ↓
+          </div>
+          <div class="field">
+            <label>API-ключ Gemini</label>
+            <input type="password" id="geminiKey" placeholder="AIza..." autocomplete="off" spellcheck="false">
+            <label>Модель</label>
+            <input type="text" id="geminiModel" placeholder="gemini-2.0-flash" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+      </div>
+
+      <div class="opt" id="optLocal" onclick="pickEngine('local')">
+        <div class="opt-h"><span class="radio"></span><b>Локально в браузере</b><span class="tag free">Без ключа · приватно</span></div>
+        <div class="opt-body" onclick="event.stopPropagation()">
+          <p>Модель скачивается в телефон один раз (~0,9 ГБ) и работает офлайн, без интернета и ключей. Нужен современный телефон с поддержкой WebGPU (новый Chrome на Android). Медленнее облака.</p>
+          <button class="load-btn" id="loadLocalBtn" onclick="loadLocal()">⬇ Скачать и запустить модель</button>
+          <div class="progress" id="prog"><i id="progBar"></i></div>
+          <div class="pstat" id="progStat"></div>
+        </div>
+      </div>
+
+      <button class="save" onclick="saveSettings()">Сохранить</button>
+      <div class="disclaimer">ИИ-агенты могут ошибаться — проверяйте цены, расчёты и юридические тексты перед отправкой клиентам.</div>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- WebLLM (local model) -->
+<script type="module">
+  let webllm=null;
+  window.LocalLLM={
+    engine:null, loaded:false, loading:false,
+    model:"Llama-3.2-1B-Instruct-q4f16_1-MLC",
+    async ensureLib(){ if(!webllm){ webllm=await import("https://esm.run/@mlc-ai/web-llm"); } },
+    async load(cb){
+      if(this.loaded||this.loading) return;
+      if(!('gpu' in navigator)) throw new Error("Этот браузер не поддерживает WebGPU. Откройте в свежем Chrome на Android или выберите Gemini.");
+      this.loading=true;
+      await this.ensureLib();
+      this.engine=await webllm.CreateMLCEngine(this.model,{initProgressCallback:cb});
+      this.loaded=true; this.loading=false;
+},
+    async chat(system,history){
+      const messages=[{role:"system",content:system},
+        ...history.map(m=>({role:m.role==="assistant"?"assistant":"user",content:m.text}))];
+      const r=await this.engine.chat.completions.create({messages,temperature:0.7,max_tokens:900});
+      return r.choices[0].message.content;
+}
+};
+</script>
+
+<script>
+/* safety stub: module script (window.LocalLLM) is deferred and may not
+   exist yet when this classic script first runs, or if esm.run is unreachable */
+if(!window.LocalLLM){
+  window.LocalLLM={loaded:false,loading:false,
+    async load(){ throw new Error('Локальный движок не загрузился (нужен интернет при первом запуске и свежий Chrome). Используйте Gemini.'); },
+    async chat(){ throw new Error('Локальная модель не готова.'); }};
+}
+
+/* ============================================================
+   КОНТЕКСТ КОМПАНИИ — встроен в каждого агента
+============================================================ */
+const COMPANY = `
+КОМПАНИЯ: ООО «Прогресс», ИНН 3700038647, Ивановская область.
+ПРОФИЛЬ: собственное производство новых деревянных поддонов и палетной доски, полный цикл (от пиловочника до отгрузки). Мощность — до 60 000 поддонов в месяц.
+СТАНДАРТЫ: ГОСТ 33757-2016, стандарт EUR/EPAL. Камерной сушки НЕТ — доска естественной влажности. Хвоя 1 и 2 сорт.
+КОНТАКТ: телефон и WhatsApp +7 908 560-73-49.
+ДОСТАВКА: фурами по Москве, области и регионам РФ; возможен самовывоз. Работаем с юрлицами по договору, с НДС и без.
+
+ПРАЙС-ОРИЕНТИР (цены за 1 шт, БЕЗ НДС и доставки; «от»):
+• Европоддон 800×1200, 6 досок — 1 сорт 660 ₽, 2 сорт 570 ₽
+• Европоддон 800×1200, 5 досок (облегчённый) — 1 сорт 625 ₽, 2 сорт 540 ₽
+• Поддон 1000×1200, 7 досок — 1 сорт 710 ₽, 2 сорт 600 ₽
+• Поддон 1000×1200, 6 досок — 1 сорт 680 ₽, 2 сорт 580 ₽
+• Поддон 1140×1140, 7 досок — 1 сорт 740 ₽, 2 сорт 630 ₽
+• Поддон 1200×1200, 7 досок — 1 сорт 740 ₽, 2 сорт 630 ₽
+• Поддон 1200×1600 и 1200×2400 — цена договорная
+• Палетная доска — от 14 500 ₽/м³, сечение и длина под задачу
+Финальная цена зависит от объёма, сорта и сезона. На большие объёмы — скидки.
+
+ОБЩИЕ ПРАВИЛА: отвечай по-русски, коротко и по делу, как опытный сотрудник этой компании. Используй реальные цифры из прайса. Если данных не хватает — задай 1–2 уточняющих вопроса. Не выдумывай факты о компании сверх указанного.
+`;
+
+const AGENTS = [
+{ id:'sales', name:'Олег', role:'Менеджер по продажам', emoji:'💼',
+    grad:'linear-gradient(145deg,#e0a45e,#a8662a)',
+    prompt:`Ты — Олег, ведущий менеджер по продажам ООО «Прогресс». Твоя задача — продавать поддоны: отвечать на запросы цены, считать выгоду для клиента, работать с возражениями («дорого», «у других дешевле»), подводить к сделке и предлагать следующий шаг (созвон, счёт, образец). Тон — уверенный, дружелюбный, без воды. Всегда предлагай позвонить на +7 908 560-73-49.`,
+    chips:['Клиент просит скидку на 2000 поддонов','Ответь на запрос цены европоддона','Закрой возражение «дорого»'] },
+{ id:'docs', name:'Ирина', role:'КП и документы', emoji:'📄',
+    grad:'linear-gradient(145deg,#7aa6ff,#3a5bb0)',
+    prompt:`Ты — Ирина, специалист по документам ООО «Прогресс». Готовишь коммерческие предложения, шаблоны договоров поставки, счета и спецификации. Пиши готовый текст, который можно сразу отправить клиенту. Структурируй: шапка, позиции с ценами из прайса, условия, реквизиты (ООО «Прогресс», ИНН 3700038647). Уточняй объём и сорт, если не указаны.`,
+    chips:['Сделай КП на 5000 европоддонов 800×1200','Шаблон договора поставки','Счёт на оплату партии'] },
+{ id:'supply', name:'Виктор', role:'Снабжение и сырьё', emoji:'🪵',
+    grad:'linear-gradient(145deg,#8ad07a,#3e8c4f)',
+    prompt:`Ты — Виктор, снабженец ООО «Прогресс». Помогаешь искать поставщиков пиловочника и палетной доски, считать себестоимость поддона, сравнивать предложения, планировать закуп под план 60 000 поддонов/мес. Давай практичные советы по сырью, сортам хвои, объёмам и логистике закупа. Считай в рублях и кубометрах.`,
+    chips:['Посчитай себестоимость европоддона','Сколько доски нужно на 60 000 поддонов','Где искать пиловочник дешевле'] },
+{ id:'support', name:'Марина', role:'Поддержка клиентов', emoji:'🎧',
+    grad:'linear-gradient(145deg,#f0ab53,#c0762a)',
+    prompt:`Ты — Марина, поддержка клиентов ООО «Прогресс». Вежливо и быстро отвечаешь на типовые вопросы (размеры, сорта, цены, сроки, доставка, оплата), помогаешь оформить заявку (что уточнить у клиента: тип поддона, сорт, количество, город доставки, контакт). Тон — тёплый и заботливый. Всегда оставляй контакт +7 908 560-73-49.`,
+    chips:['Ответь клиенту про сроки изготовления','Частые вопросы по поддонам','Оформи заявку от клиента'] },
+{ id:'analyst', name:'Артём', role:'Аналитик и расчёты', emoji:'📊',
+    grad:'linear-gradient(145deg,#b98cff,#6a3fb0)',
+    prompt:`Ты — Артём, аналитик ООО «Прогресс». Считаешь маржу, объёмы, прайс по сортам, выручку и сценарии («что если поднять цену на 5%»). Показывай расчёт по шагам и итог. Используй цифры из прайса и мощность 60 000 шт/мес. Будь точным с арифметикой.`,
+    chips:['Посчитай маржу при цене 660 ₽','Выручка при 60 000 поддонов/мес','Прайс-таблица по сортам'] },
+{ id:'smm', name:'Даша', role:'Маркетинг и контент', emoji:'📣',
+    grad:'linear-gradient(145deg,#ff8fb1,#c84f7a)',
+    prompt:`Ты — Даша, маркетолог ООО «Прогресс». Пишешь продающие тексты: объявления на Авито и Юлу, посты для соцсетей и Telegram-каналов, описания товара для сайта, рекламные креативы, заголовки, тексты рассылок для оптовиков. Делай акцент на выгодах: собственный завод (не перекупы), объём до 60 000 поддонов/мес, цены от 660 ₽, доставка фурами по РФ, ГОСТ и EUR/EPAL. Пиши готовый к публикации текст, эмодзи — в меру, всегда заканчивай призывом позвонить на +7 908 560-73-49. Если нужно — предложи 2–3 варианта на выбор.`,
+    chips:['Объявление на Авито про европоддоны','Пост для соцсетей о производстве','Текст рассылки для оптовиков'] },
+];
+
+/* ============================================================
+   STATE
+============================================================ */
+const LS='progress_ai_office';
+let state = load();
+function load(){ try{ return JSON.parse(localStorage.getItem(LS)) || {}; }catch(e){ return {}; } }
+function save(){ localStorage.setItem(LS, JSON.stringify(state)); }
+state.engine = state.engine || 'gemini';
+state.geminiModel = state.geminiModel || 'gemini-2.0-flash';
+state.chats = state.chats || {};
+let current = null;
+
+/* ============================================================
+   RENDER HOME
+============================================================ */
+function renderAgents(){
+  const wrap=document.getElementById('agentList');
+  wrap.innerHTML='';
+  AGENTS.forEach(a=>{
+    const el=document.createElement('div');
+    el.className='acard';
+    el.onclick=()=>openChat(a.id);
+    el.innerHTML=`<div class="avatar" style="background:${a.grad}">${a.emoji}</div>
+            <div class="info"><b>${a.name}</b><small>${a.role}</small></div>
+      <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M9 18l6-6-6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+    wrap.appendChild(el);
+});
+  updateWarn();
+}
+function updateWarn(){
+    const ok = (state.engine==='gemini' && state.geminiKey) || (state.engine==='local' && window.LocalLLM.loaded);
+  document.getElementById('setupWarn').style.display = ok ? 'none' : 'flex';
+}
+
+/* ============================================================
+     CHAT
+============================================================ */
+function openChat(id){
+    current = AGENTS.find(a=>a.id===id);
+  document.getElementById('chatAvatar').textContent=current.emoji;
+  document.getElementById('chatAvatar').style.background=current.grad;
+  document.getElementById('chatName').textContent=current.name;
+  document.getElementById('chatRole').textContent=current.role;
+  renderMsgs();
+  renderChips();
+  switchView('chat');
+  setTimeout(()=>document.getElementById('input').focus(),300);
+}
+function renderChips(){
+  const c=document.getElementById('chips'); c.innerHTML='';
+  current.chips.forEach(t=>{
+    const b=document.createElement('button'); b.className='chip'; b.textContent=t;
+    b.onclick=()=>{ document.getElementById('input').value=t; autoGrow(document.getElementById('input')); send(); };
+    c.appendChild(b);
+});
+}
+function history(){ return state.chats[current.id] || (state.chats[current.id]=[]); }
+function renderMsgs(){
+  const box=document.getElementById('msgs'); box.innerHTML='';
+      const h=history();
+  if(h.length===0){
+    const intro=document.createElement('div'); intro.className='day-hint';
+    intro.textContent=`Это ${current.name}, ${current.role.toLowerCase()}. Напишите вопрос или выберите подсказку ниже.`;
+    box.appendChild(intro);
+}
+  h.forEach(m=>addBubble(m.role==='user'?'me':'bot', m.text, false));
+  scrollDown();
+}
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(s){ return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'); }
+function addBubble(cls,text,anim=true){
+    const b=document.createElement('div'); b.className='bubble '+cls;
+  b.innerHTML=fmt(text); if(!anim) b.style.animation='none';
+  document.getElementById('msgs').appendChild(b); scrollDown(); return b;
+}
+function scrollDown(){ const m=document.getElementById('msgs'); setTimeout(()=>m.scrollTop=m.scrollHeight,30); }
+function autoGrow(t){ t.style.height='auto'; t.style.height=Math.min(t.scrollHeight,120)+'px'; }
+
+let busy=false;
+async function send(){
+  if(busy) return;
+  const inp=document.getElementById('input');
+  const text=inp.value.trim(); if(!text) return;
+  // engine check
+  if(state.engine==='gemini' && !state.geminiKey){ toast('Сначала добавьте ключ Gemini в настройках','err'); openSettings(); return; }
+  if(state.engine==='local' && !window.LocalLLM.loaded){ toast('Сначала загрузите локальную модель','err'); openSettings(); return; }
+
+  inp.value=''; autoGrow(inp);
+      addBubble('me',text);
+  history().push({role:'user',text}); save();
+
+  busy=true; document.getElementById('sendBtn').disabled=true;
+  const typing=document.createElement('div'); typing.className='typing'; typing.innerHTML='<i></i><i></i><i></i>';
+  document.getElementById('msgs').appendChild(typing); scrollDown();
+
+  try{
+    const sys = COMPANY + "\n\nТВОЯ РОЛЬ:\n" + current.prompt;
+    const hist = history().slice(-10);
+    let reply;
+    if(state.engine==='gemini') reply = await callGemini(sys, hist);
+    else reply = await window.LocalLLM.chat(sys, hist);
+    typing.remove();
+    reply = (reply||'').trim() || '(пустой ответ)';
+    addBubble('bot', reply);
+    history().push({role:'assistant',text:reply}); save();
+}catch(err){
+    typing.remove();
+    addBubble('bot', '⚠ Ошибка: '+(err.message||err)+'\n\nПроверьте ключ/модель в настройках или интернет.');
+}finally{
+    busy=false; document.getElementById('sendBtn').disabled=false;
+}
+}
+
+async function callGemini(system, hist){
+  const model=(state.geminiModel||'gemini-2.0-flash').trim();
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(state.geminiKey)}`;
+  const contents=hist.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.text}]}));
+  const body={ system_instruction:{parts:[{text:system}]}, contents,
+    generationConfig:{temperature:0.7,maxOutputTokens:1024},
+    safetySettings:[
+{category:'HARM_CATEGORY_HARASSMENT',threshold:'BLOCK_NONE'},
+{category:'HARM_CATEGORY_HATE_SPEECH',threshold:'BLOCK_NONE'},
+{category:'HARM_CATEGORY_SEXUALLY_EXPLICIT',threshold:'BLOCK_NONE'},
+{category:'HARM_CATEGORY_DANGEROUS_CONTENT',threshold:'BLOCK_NONE'}
+    ]};
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok){
+    let msg=r.status+'';
+    try{ const e=await r.json(); msg=e.error?.message||JSON.stringify(e); }catch(_){}
+    if(r.status===400 && /API key/i.test(msg)) msg='неверный ключ API';
+    if(r.status===404) msg='модель «'+model+'» не найдена — попробуйте gemini-2.0-flash или gemini-1.5-flash';
+    throw new Error(msg);
+}
+  const d=await r.json();
+  const c=d.candidates?.[0];
+  if(!c) throw new Error('пустой ответ от Gemini');
+  return (c.content?.parts||[]).map(p=>p.text||'').join('');
+}
+
+function clearChat(){
+  if(!current) return;
+  state.chats[current.id]=[]; save(); renderMsgs();
+  toast('Диалог очищен');
+}
+
+/* ============================================================
+   SETTINGS
+============================================================ */
+function openSettings(){
+  document.getElementById('geminiKey').value = state.geminiKey || '';
+  document.getElementById('geminiModel').value = state.geminiModel || 'gemini-2.0-flash';
+  paintEngine();
+  switchView('settings');
+}
+function closeSettings(){ switchView(current?'chat':'home'); }
+function pickEngine(e){ state.engine=e; paintEngine(); }
+function paintEngine(){
+  document.getElementById('optGemini').classList.toggle('on', state.engine==='gemini');
+  document.getElementById('optLocal').classList.toggle('on', state.engine==='local');
+  if(window.LocalLLM.loaded){
+    document.getElementById('loadLocalBtn').textContent='✓ Модель загружена и готова';
+    document.getElementById('loadLocalBtn').disabled=true;
+}
+}
+function saveSettings(){
+  state.geminiKey=document.getElementById('geminiKey').value.trim();
+  state.geminiModel=document.getElementById('geminiModel').value.trim()||'gemini-2.0-flash';
+  save(); updateWarn();
+  toast('Сохранено');
+  closeSettings();
+}
+async function loadLocal(){
+  const btn=document.getElementById('loadLocalBtn');
+  const prog=document.getElementById('prog'), bar=document.getElementById('progBar'), stat=document.getElementById('progStat');
+  prog.classList.add('show'); btn.disabled=true; btn.textContent='Загрузка…';
+  try{
+    await window.LocalLLM.load((p)=>{
+      const pct=Math.round((p.progress||0)*100);
+      bar.style.width=pct+'%';
+      stat.textContent=(p.text||'Загрузка модели…').replace(/\[.*?\]/g,'').slice(0,80);
+});
+    bar.style.width='100%'; stat.textContent='Готово! Модель работает офлайн.';
+    btn.textContent='✓ Модель загружена и готова';
+    state.engine='local'; paintEngine(); updateWarn(); toast('Локальная модель готова');
+}catch(err){
+    stat.textContent='';
+    btn.disabled=false; btn.textContent='⬇ Скачать и запустить модель';
+    toast(err.message||'Не удалось загрузить','err');
+}
+}
+
+/* ============================================================
+     NAV / UTIL
+============================================================ */
+function switchView(id){
+  ['home','chat','settings'].forEach(v=>{
+    const el=document.getElementById(v);
+    if(v===id){ el.classList.remove('hidden','back'); }
+    else if(id==='settings' && v!=='settings'){ /* keep underneath */ }
+    else { el.classList.add('hidden'); }
+});
+  if(id==='settings'){ document.getElementById('settings').classList.remove('hidden'); }
+  if(id==='home'){ document.getElementById('chat').classList.add('hidden'); document.getElementById('settings').classList.add('hidden'); current=null; }
+  if(id==='chat'){ document.getElementById('settings').classList.add('hidden'); document.getElementById('chat').classList.remove('hidden'); }
+}
+function goHome(){ switchView('home'); }
+let toastT;
+function toast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type==='err'?' err':'');
+      clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast'+(type==='err'?' err':''),2600);
+}
+document.getElementById('input').addEventListener('keydown',e=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); }
+});
+
+/* init */
+renderAgents();
+if(!state.geminiKey && state.engine==='gemini'){ /* warn shown */ }
+
+/* service worker */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
+  
