@@ -863,7 +863,7 @@ async function send(){
 
   try{
     const sys = COMPANY + "\n\nТВОЯ РОЛЬ:\n" + current.prompt;
-    const hist = history().slice(-10);
+    const hist = history().slice(-40);
     let reply;
     if(state.engine==='gemini') reply = await callGemini(sys, hist);
     else reply = await window.LocalLLM.chat(sys, hist);
