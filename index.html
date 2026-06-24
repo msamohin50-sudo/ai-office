@@ -880,24 +880,27 @@ async function send(){
 }
 
 async function callGemini(system, hist){
-  const model=(state.geminiModel||'qwen/qwen3-next-80b-a3b-instruct:free').trim();
-  const url='https://openrouter.ai/api/v1/chat/completions';
   const messages=[{role:'system',content:system}].concat(hist.map(m=>({role:m.role==='assistant'?'assistant':'user',content:m.text})));
-  const body={ model:model, messages:messages, temperature:0.7, max_tokens:1024 };
-  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.geminiKey},body:JSON.stringify(body)});
-  if(!r.ok){
-    let msg=r.status+'';
-    try{ const e=await r.json(); msg=(e.error&&e.error.message)||JSON.stringify(e); }catch(_){}
-    if(r.status===401) msg='неверный ключ OpenRouter (нужен вид sk-or-...)';
-    if(r.status===402) msg='кончились бесплатные кредиты — выберите модель с :free';
-    if(r.status===404) msg='модель не найдена — впишите в настройках, напр. qwen/qwen3-next-80b-a3b-instruct:free';
-    if(r.status===429) msg='слишком много запросов, подождите минуту';
-    throw new Error(msg);
+  const primary=(state.geminiModel||'qwen/qwen3-next-80b-a3b-instruct:free').trim();
+  const list=[primary,'meta-llama/llama-3.3-70b-instruct:free','qwen/qwen3-next-80b-a3b-instruct:free','google/gemma-4-31b-it:free'];
+  const seen={}; let lastErr='перегрузка';
+  for(let i=0;i<list.length;i++){
+    const model=list[i]; if(seen[model]) continue; seen[model]=1;
+    for(let a=0;a<3;a++){
+      let r;
+      try{
+        r=await fetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.geminiKey},body:JSON.stringify({model:model,messages:messages,temperature:0.7,max_tokens:1024})});
+      }catch(e){ lastErr=String(e.message||e); await new Promise(s=>setTimeout(s,1200)); continue; }
+      if(r.status===429||r.status===503){ lastErr='перегрузка'; await new Promise(s=>setTimeout(s,1500*(a+1))); continue; }
+      if(r.status===401) throw new Error('неверный ключ OpenRouter (нужен вид sk-or-...)');
+      if(r.status===402) throw new Error('кончились кредиты — нужна модель с :free');
+      if(!r.ok){ let m=r.status+''; try{const e=await r.json(); m=(e.error&&e.error.message)||m;}catch(_){} lastErr=m; break; }
+      const d=await r.json(); const c=d.choices&&d.choices[0];
+      if(c&&c.message&&c.message.content) return c.message.content;
+      lastErr='пустой ответ'; break;
+    }
   }
-  const d=await r.json();
-  const c=d.choices&&d.choices[0];
-  if(!c) throw new Error('пустой ответ от OpenRouter');
-  return (c.message&&c.message.content)||'';
+  throw new Error('бесплатные модели сейчас перегружены. Подождите минуту и отправьте ещё раз. ('+lastErr+')');
 }
 
 function clearChat(){
