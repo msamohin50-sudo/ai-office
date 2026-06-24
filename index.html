@@ -773,6 +773,8 @@ function load(){ try{ return JSON.parse(localStorage.getItem(LS)) || {}; }catch(
 function save(){ localStorage.setItem(LS, JSON.stringify(state)); }
 state.engine = state.engine || 'gemini';
 state.geminiModel = state.geminiModel || 'qwen/qwen3-next-80b-a3b-instruct:free';
+if(state.geminiModel && state.geminiModel.slice(0,6)==='gemini') state.geminiModel='qwen/qwen3-next-80b-a3b-instruct:free';
+if(state.geminiKey && state.geminiKey.slice(0,6)!=='sk-or-') state.geminiKey='';
 state.chats = state.chats || {};
 let current = null;
 
